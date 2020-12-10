@@ -1,0 +1,231 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <title>设备配网wifi</title>
+    <script type="text/javascript" src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>
+    <script type="text/javascript">
+        setTimeout(function(){
+            wx.miniProgram.navigateBack({
+                    url:'/pages/index/index',//跳转回小程序的页面,传参id, 小程序onLoad函数接收参数即可
+                    success: function(){
+                    console.log('success')
+                },
+                    fail: function(){
+                    console.log('跳转回小程序的页面fail');
+                },
+            })
+        },1000)
+         function getajax(obj,callback){
+            //  console.log(location.href)
+             let data={
+                 "url":"https://huazai.loca.lt/airkiss"
+             }
+            var xhr=new XMLHttpRequest;
+            xhr.open("post","https://huazai.loca.lt/wxJssdk/getJssdk"+'?url='+location.href)
+            xhr.send(JSON.stringify(data));
+            xhr.addEventListener("readystatechange",function(){
+            var res=xhr.responseText;
+                callback(res)
+                console.log(res)
+            })
+        }   
+        
+         window.onload = function (){ 
+            getajax({},function(res){
+                console.log(res)
+                let data=JSON.parse(res)
+                // console.log(JSON.parse(res))
+                wx.config({
+                    beta:true,//开启内测接口调用，注入wx.invoke方法
+                    debug:false,//关闭调试模式
+                    appId: data.appId,//AppID
+                    timestamp: data.timestamp,//时间戳
+                    nonceStr:  data.nonceStr,//随机串
+                    signature: data.signature,//签名
+                    jsApiList: [
+                        // 所有要调用的 API 都要加到这个列表中
+                        'configWXDeviceWiFi','getLocation'
+                    ]
+                });
+            })
+            
+
+        }   
+        //地图定位精确方法
+ 
+  /**
+ * WGS84转GCj02
+ * @param lng
+ * @param lat
+ * @returns {*[]}
+ */
+ 
+  function wgs84togcj02(lng, lat) {
+    var that=this
+ 
+    var x_PI = 3.14159265358979324 * 3000.0 / 180.0;
+    var PI = 3.1415926535897932384626;
+    var a = 6378245.0;
+    var ee = 0.00669342162296594323;
+    if (out_of_china(lng, lat)) {
+     return [lng, lat]
+     }
+    else {
+      var dlat = transformlat(lng - 105.0, lat - 35.0);
+      var dlng = transformlng(lng - 105.0, lat - 35.0);
+  var radlat = lat / 180.0 * PI;
+  var magic = Math.sin(radlat);
+  magic = 1 - ee * magic * magic;
+  var sqrtmagic = Math.sqrt(magic);
+  dlat = (dlat * 180.0) / ((a * (1 - ee)) / (magic * sqrtmagic) * PI);
+  dlng = (dlng * 180.0) / (a / sqrtmagic * Math.cos(radlat) * PI);
+  var mglat = lat + dlat;
+  var mglng = lng + dlng;
+  return [mglng, mglat]
+}
+}
+  /**
+   * 火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换
+   * 即谷歌、高德 转 百度
+   * @param lng
+   * @param lat
+   * @returns {*[]}
+   */
+   function gcj02tobd09(lng, lat) {
+    var that = this
+    var x_PI = 3.14159265358979324 * 3000.0 / 180.0;
+    var PI = 3.1415926535897932384626;
+    var a = 6378245.0;
+    var ee = 0.00669342162296594323;
+    var z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * x_PI);
+    var theta = Math.atan2(lat, lng) + 0.000003 * Math.cos(lng * x_PI);
+    var bd_lng = z * Math.cos(theta) + 0.0065;
+    var bd_lat = z * Math.sin(theta) + 0.006;
+    return [bd_lng, bd_lat]
+  }
+  function transformlat(lng, lat) {
+    var x_PI = 3.14159265358979324 * 3000.0 / 180.0;
+    var PI = 3.1415926535897932384626;
+    var a = 6378245.0;
+    var ee = 0.00669342162296594323;
+    var ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat + 0.2 * Math.sqrt(Math.abs(lng));
+    ret += (20.0 * Math.sin(6.0 * lng * PI) + 20.0 * Math.sin(2.0 * lng * PI)) * 2.0 / 3.0;
+    ret += (20.0 * Math.sin(lat * PI) + 40.0 * Math.sin(lat / 3.0 * PI)) * 2.0 / 3.0;
+    ret += (160.0 * Math.sin(lat / 12.0 * PI) + 320 * Math.sin(lat * PI / 30.0)) * 2.0 / 3.0;
+    return ret
+  }
+ 
+function transformlng(lng, lat) {
+  var x_PI = 3.14159265358979324 * 3000.0 / 180.0;
+  var PI = 3.1415926535897932384626;
+  var a = 6378245.0;
+  var ee = 0.00669342162296594323;
+    var ret = 300.0 + lng + 2.0 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
+    ret += (20.0 * Math.sin(6.0 * lng * PI) + 20.0 * Math.sin(2.0 * lng * PI)) * 2.0 / 3.0;
+    ret += (20.0 * Math.sin(lng * PI) + 40.0 * Math.sin(lng / 3.0 * PI)) * 2.0 / 3.0;
+    ret += (150.0 * Math.sin(lng / 12.0 * PI) + 300.0 * Math.sin(lng / 30.0 * PI)) * 2.0 / 3.0;
+    return ret
+  }
+ 
+/**
+* 判断是否在国内，不在国内则不做偏移
+* @param lng
+* @param lat
+* @returns {boolean}
+*/
+function out_of_china(lng, lat) {
+    return (lng < 72.004 || lng > 137.8347) || ((lat < 0.8293 || lat > 55.8271) || false);
+}
+// 腾讯转百度
+function qqMapToBMap(lng, lat) {
+
+    if (lng == null || lng == '' || lat == null || lat == '')
+        return [lng, lat];
+
+    var x_pi = 3.14159265358979324;
+    var x = parseFloat(lng);
+    var y = parseFloat(lat);
+    var z = Math.sqrt(x * x + y * y) + 0.00002 * Math.sin(y * x_pi);
+    var theta = Math.atan2(y, x) + 0.000003 * Math.cos(x * x_pi);
+    var lng = (z * Math.cos(theta) + 0.0065).toFixed(5);
+    var lat = (z * Math.sin(theta) + 0.006).toFixed(5);
+    return [lng, lat];
+
+}
+
+        var tapl=true;   
+        function jump(){
+            
+            if(tapl){//防止多次点击
+                tapl=false;
+                wx.ready(function () {
+                    wx.getLocation({
+                        type: 'gcj02', // 默认为wgs84的gps坐标，如果要返回直接给openLocation用的火星坐标，可传入'gcj02'
+                        success: function (res) {
+                            tapl=true     
+                            var latitude = res.latitude; // 纬度，浮点数，范围为90 ~ -90
+                            var longitude = res.longitude; // 经度，浮点数，范围为180 ~ -180。
+                            var speed = res.speed; // 速度，以米/每秒计
+                            var accuracy = res.accuracy; // 位置精度
+
+                             // wgs84转百度坐标系
+                            var ssws=wgs84togcj02(longitude,latitude )
+                            ssws = gcj02tobd09(ssws[0]  , ssws[1] )
+                            //解决定位偏移
+                            var ssssss1 = ssws[1] - 0.000160
+                            var ssssss2 = ssws[0] - 0.000160
+                            alert("纬度："+qqMapToBMap(longitude,latitude)[0]+"经度"+qqMapToBMap(longitude,latitude)[1])
+                            // console.log("纬度："+ssssss1+"经度"+ssssss2)    
+                            // console.log("纬度："+ssws[0]+"经度"+ssws[1])
+                            // alert("纬度："+ssssss1+"经度"+ssssss2)
+                        }
+                    });
+                    // wx.checkJsApi({
+                    //     jsApiList: ['configWXDeviceWiFi','chooseImage'],
+                    //     success: function (res) {
+                    //         wx.invoke('configWXDeviceWiFi','chooseImage', {},
+                    //             function (res) {   
+                    //                 tapl=true     
+                    //                 var err_msg = res.err_msg;
+                    //                 if (err_msg == 'configWXDeviceWiFi:ok') {
+                    //                     alert("配置 WIFI成功")
+                    //                     WeixinJSBridge.call('closeWindow');
+                    //                     return;                 
+                    //                 }else if(err_msg == 'configWXDeviceWiFi:cancel'){
+                    //                     alert("已取消配置 WIFI")
+                    //                 }else {
+                    //                     alert("配置 WIFI失败");
+                    //                 }
+                    //             }
+                    //         );
+                    //     }
+                    // });
+
+                });  
+            }
+        }
+        
+        wx.error(function(res){
+            alert("配置出错");
+        });
+  
+    </script>
+
+</head>
+<body>
+    <div>
+        <div style="width:100%;height:12rem;font-size:5rem;text-align: center;"><img style="width:150px;padding-top: 30px;" src="../images/wifi.png" alt=""></div>
+        <p  style="text-align:center;font-size:16px;">1.确保手机已经连接wifi</p>
+        <p  style="text-align:center;font-size:16px;">2.请长按模块上的网络配置按钮5s</p>
+        <p  style="text-align:center;font-size:16px;">3.点击继续配置输入正确WiFi密码</p>           
+        <p  style="text-align:center;font-size:16px;">4.请等待wifi配置指示灯绿色常亮为已连接</p>           
+        <div align="center">
+            <input style="color:#fff;width:90%;height:3.6rem;font-size:1.6rem;background:#9fd32c;" type="button" value="继续配置" onclick=javascrtpt:jump()>
+        </div>
+    </div>
+</body>
+</html>
